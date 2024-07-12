@@ -1,9 +1,9 @@
 {
     disko.devices = {
         disk = {
-            vdb = {
+            main = {
                 type = "disk";
-                device = "/dev/vdb";
+                device = "/dev/sda";
                 content = {
                     type = "gpt";
                     partitions = {
@@ -21,26 +21,33 @@
                         };
                         luks = {
                             size = "100%";
-                            name = "crypt";
-                            passwordFile = "/tmp/crypt.key";
-                            settings = {
-                                allowDiscards = true;
-                            };
                             content = {
-                                type = "btfrs";
-                                extraArgs = [ "-f" ];
-                                subvolumes = {
-                                    "/root" = {
-                                        mountpoint = "/";
-                                        mountOptions = [ "compress=zstd" "noatime" ];
-                                    };
-                                    "/home" = {
-                                        mountpoint = "/home";
-                                        mountOptions = [ "compress=zstd" "noatime" ];
-                                    };
-                                    "/nix" = {
-                                        mountpoint = "/nix";
-                                        mountOptions = [ "compress=zstd" "noatime" ];
+                                type = "luks";
+                                name = "crypt";
+                                settings = {
+                                    allowDiscards = true;
+                                };
+                                postCreateHook = ''
+                                    dd bs=512 count=4 iflag=fullblock if=/dev/random of=/mnt/crypt.key
+                                    chmod 600 /mnt/crypt.key
+                                    cryptsetup luksAddKey /dev/sda2 /mnt/crypt.key /tmp/disk.key
+                                '';
+                                content = {
+                                    type = "btrfs";
+                                    extraArgs = [ "-f" ];
+                                    subvolumes = {
+                                        "/root" = {
+                                            mountpoint = "/";
+                                            mountOptions = [ "compress=zstd" "noatime" ];
+                                        };
+                                        "/home" = {
+                                            mountpoint = "/home";
+                                            mountOptions = [ "compress=zstd" "noatime" ];
+                                        };
+                                        "/nix" = {
+                                            mountpoint = "/nix";
+                                            mountOptions = [ "compress=zstd" "noatime" ];
+                                        };
                                     };
                                 };
                             };
