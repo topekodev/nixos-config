@@ -1,9 +1,12 @@
 {
+    device ? throw "Disk device, /dev/xxx",
+    ...
+}: {
     disko.devices = {
         disk = {
             main = {
                 type = "disk";
-                device = "/dev/sda";
+                inherit device;
                 content = {
                     type = "gpt";
                     partitions = {
@@ -25,15 +28,9 @@
                                 type = "luks";
                                 name = "crypt";
                                 settings = {
-                                    keyFile = "/dev/mapper/cryptkey";
-                                    keyFileSize = 8192;
                                     allowDiscards = true;
                                 };
-                                postCreateHook = ''
-                                    dd bs=512 count=4 iflag=fullblock if=/dev/random of=/tmp/crypt.key
-                                    chmod 600 /tmp/crypt.key
-                                    cryptsetup luksAddKey --key-file /dev/mapper/cryptkey --keyfile-size 8192 /dev/sda2 /tmp/crypt.key
-                                '';
+                                passwordFile = "/tmp/secret.key";
                                 content = {
                                     type = "btrfs";
                                     extraArgs = [ "-f" ];
